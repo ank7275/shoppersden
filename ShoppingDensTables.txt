@@ -1,0 +1,108 @@
+====================================================
+                                               Customer Table
+====================================================
+
+create table customer
+(
+u_id NUMBER,
+u_name VARCHAR2(30) NOT NULL,
+u_gender VARCHAR2(6),
+u_address VARCHAR2(80),
+u_email VARCHAR2(30) 
+CONSTRAINT PK_USER_UID PRIMARY KEY,
+u_contact VARCHAR2(15) NOT NULL,
+u_dob DATE,
+u_pwd VARCHAR2(15) NOT NULL,
+u_queries VARCHAR2(500),
+u_ans VARCHAR2(500)
+);
+
+
+====================================================
+                                               Category Table
+====================================================
+
+
+create table category
+(
+c_id NUMBER
+CONSTRAINT PK_CATEGORY_CID PRIMARY KEY,
+c_name VARCHAR2(30) NOT NULL UNIQUE
+);
+
+
+====================================================
+                                               Admin Table
+====================================================
+
+
+create table admin
+(
+a_id VARCHAR2(20)
+CONSTRAINT PK_ADMIN_AID PRIMARY KEY,
+a_name VARCHAR2(30) NOT NULL,
+a_pwd VARCHAR2(15) NOT NULL
+);
+
+====================================================
+                                               Product Table
+====================================================
+
+
+create table product
+(
+p_id NUMBER
+CONSTRAINT PK_PRODUCT_PID PRIMARY KEY,
+p_name VARCHAR2(30) NOT NULL,
+p_img VARCHAR2(200) NOT NULL,
+p_c_id NUMBER 
+CONSTRAINT FK_PRODUCT_CID REFERENCES category(c_id),
+p_desc VARCHAR2(200),
+price NUMBER NOT NULL,
+p_qty NUMBER NOT NULL,
+p_admin VARCHAR2(30) NOT NULL
+);
+
+====================================================
+                                               Cart Table
+====================================================
+
+
+create table cart
+(
+p_id NUMBER,
+p_name VARCHAR(20),
+qty NUMBER NOT NULL,
+add_date DATE,
+u_id VARCHAR2(20) 
+);
+
+====================================================
+                                               Transaction Table
+====================================================
+
+
+create table transactions
+(
+tr_id VARCHAR2(20)
+CONSTRAINT PK_TRANSACTIONS_TRID PRIMARY KEY,
+s_add VARCHAR2(10) NOT NULL,
+qty NUMBER NOT NULL,
+tr_date DATE,
+d_date DATE,
+amount number NOT NULL
+);
+======================================================
+                                             Card table
+======================================================
+create table cards
+(
+c_no varchar2(16) 
+CONSTRAINT PK_CARDS_CNO PRIMARY KEY,
+u_id NUMBER
+CONSTRAINT FK_CARDS_UID REFERENCES customer(u_id),
+c_ccv varchar2(3)NOT NULL,
+c_expMonth number NOT NULL,
+c_expYear number NOT NULL,
+c_hName varchar2(30)
+);

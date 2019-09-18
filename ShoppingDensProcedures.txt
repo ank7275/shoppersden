@@ -1,0 +1,320 @@
+ADMIN PROCEDURES
+===============================================================
+
+CREATE OR REPLACE PROCEDURE prcAdminRegister(
+                                             name admin.a_name%type,
+                                             pass admin.a_pwd%type,
+                                             id OUT varchar2)
+AS
+BEGIN
+   SELECT GenerateAdminID() INTO id FROM DUAL;
+   INSERT INTO admin VALUES(id,name,pass);
+END;
+
+==============================================================
+CREATE OR REPLACE PROCEDURE prcVerifyAdmin(id admin.a_id%type,
+                                             pass admin.a_pwd%type,
+                                             flag OUT varchar2)
+AS
+BEGIN
+   SELECT a_name INTO flag from admin where a_id=id AND a_pwd=pass;
+   exception when NO_DATA_FOUND THEN
+   flag:='Invalid';
+END;
+
+===============================================================
+CREATE OR REPLACE FUNCTION GenerateAdminID return varchar2
+AS
+BEGIN
+DECLARE
+id admin.a_id%type;
+BEGIN
+   select CASE when max(a_id) is null THEN 'ADMIN001' 
+           when max(a_id) is not null THEN
+           CASE WHEN TO_NUMBER(substr(max(a_id),6))+1<10 THEN
+           concat('ADMIN00',TO_CHAR(TO_NUMBER(substr(max(a_id),6))+1))
+           WHEN TO_NUMBER(substr(max(a_id),6))+1>=10 AND TO_NUMBER(substr(max(a_id),6))+1<100 THEN
+           concat('ADMIN0',TO_CHAR(TO_NUMBER(substr(max(a_id),6))+1))
+           WHEN TO_NUMBER(substr(max(a_id),6))+1>100 THEN
+           concat('ADMIN',TO_CHAR(TO_NUMBER(substr(max(a_id),6))+1))
+           end
+           end into id
+   from admin;
+   return id;
+end;
+end;
+=================================================================================
+TRANSACTIONS PROCEDURES
+==============================================================================
+CREATE OR REPLACE FUNCTION GenerateTransacID return varchar2
+AS
+BEGIN
+DECLARE
+id admin.a_id%type;
+BEGIN
+   select CASE when max(tr_id) is null THEN 'TRANS001' 
+           when max(tr_id) is not null THEN
+           CASE WHEN TO_NUMBER(substr(max(tr_id),6))+1<10 THEN
+           concat('TRANS00',TO_CHAR(TO_NUMBER(substr(max(tr_id),6))+1))
+           WHEN TO_NUMBER(substr(max(tr_id),6))+1>=10 AND TO_NUMBER(substr(max(tr_id),6))+1<100 THEN
+           concat('TRANS0',TO_CHAR(TO_NUMBER(substr(max(tr_id),6))+1))
+           WHEN TO_NUMBER(substr(max(tr_id),6))+1>100 THEN
+           concat('TRANS',TO_CHAR(TO_NUMBER(substr(max(tr_id),6))+1))
+           end
+           end into id
+   from transactions;
+   return id;
+end;
+end;
+
+=================================================================================
+CREATE OR REPLACE PROCEDURE prcTransaction(qty transactions.qty%type,add transactions.s_add%type ,amount transactions.amount%type)
+AS
+BEGIN
+  DECLARE
+    id transactions.tr_id%type;
+  BEGIN
+     SELECT GenerateTransacID() into id FROM DUAL;
+     INSERT INTO TRANSACTIONS VALUES(id,add,qty,sysdate,sysdate+4,amount);
+  END;
+END;
+
+===============================================================================
+CUSTOMER PROCEDURES
+===============================================================================
+create or replace function fnGenerateCustomerId return number
+as
+userId number;
+begin
+select case when max(u_id) is null then 1 else
+max(u_id+1) end into userId from customer;
+return userId;
+end;
+
+===============================================================================
+create or replace procedure prcCreateNewCustomer
+(
+uName customer.u_name%type,
+uGen customer.u_gender%type,
+uAddress customer.u_address%type,
+uEmail customer.u_email%type,
+uContact customer.u_contact%type,
+uDob customer.u_dob%type,
+uPwd customer.u_pwd%type
+)
+as
+begin
+declare
+userId customer.u_id%type;
+begin
+select fnGenerateCustomerId() into userId from dual;
+insert into customer(u_id,u_name,u_gender,u_address,u_email,u_contact,u_dob,u_pwd)
+ values(userId,uName,uGen,uAddress,uEmail,uContact,uDob,uPwd);
+end;
+end;
+=============================================================================
+create or replace procedure prcVerifyCustomer(
+email customer.U_Email%type,
+pass customer.U_pwd%type,
+c out number
+)
+as 
+begin
+select count(*) into c from customer where u_email=email and U_pwd=pass;
+end;
+
+==============================================================================
+CART PROCEDURES
+==============================================================================
+create or replace procedure prcAddToCart
+(
+pId cart.p_id%type,
+pQty cart.qty%type,
+pName cart.p_name%type,
+uId cart.u_id%type
+)
+as
+begin
+insert into cart(p_id,p_name,qty,add_date,u_id)
+ values(pId,pName,pQty,sysdate,uId);
+end;
+
+
+=============================================================================
+create or replace procedure prcRemoveFromCart
+(
+pId cart.p_id%type,
+pQty cart.qty%type,
+addDate cart.add_date%type,
+uId cart.u_id%type
+)
+as
+begin
+delete from cart where p_id=pId AND qty=pQty AND add_date=addDate AND u_id=uId;
+end;
+
+==============================================================================
+create or replace procedure prcViewCart
+as
+begin
+declare
+cursor c1 is select P.p_name,P.price,C.qty from product P inner join cart C  on P.p_id=C.p_id;
+pName product.p_name%type;
+pPrice product.price%type;
+pQty cart.qty%type;
+begin
+open c1;
+loop
+fetch c1 into pName ,pPrice ,pQty ;
+EXIT WHEN C1%notfound;
+dbms_output.put_line('Product '|| pName);
+dbms_output.put_line('Price '|| pPrice);
+dbms_output.put_line('Qty  '|| pQty);
+dbms_output.put_line('---------------------------------');
+end loop;
+close c1;
+end;
+end;
+===================================================================================
+CATAGORY PROCEDURES
+===================================================================================
+CREATE OR REPLACE PROCEDURE PRCADDCATE(
+CNAME CATEGORY.C_NAME%TYPE
+)
+AS
+ BEGIN
+DECLARE
+CID NUMBER;
+BEGIN
+SELECT CASE WHEN MAX(C_ID) IS NULL THEN 1
+ELSE
+MAX(C_ID)+1
+END INTO CID FROM CATEGORY;
+INSERT INTO CATEGORY(C_ID,C_NAME)VALUES(CID,CNAME);
+DBMS_OUTPUT.PUT_LINE('CATEGORY GENERATED...');
+END;
+END;
+===================================================================================
+CREATE OR REPLACE PROCEDURE DELETECATEG (
+CID CATEGORY.C_ID%TYPE)
+AS
+BEGIN
+DELETE FROM CATEGORY WHERE C_ID=CID;
+DBMS_OUTPUT.PUT_LINE('CATEGORY DELETED....');
+END;
+====================================================================================
+CREATE OR REPLACE PROCEDURE UPDATECATEG(
+CID CATEGORY.C_ID%TYPE,
+CNAME CATEGORY.C_NAME%TYPE
+)
+AS
+BEGIN
+UPDATE CATEGORY SET C_NAME=NVL2(CNAME,CNAME,C_NAME)
+WHERE C_ID=CID;
+DBMS_OUTPUT.PUT_LINE('UPDATE CATEGORY....');
+END;
+==================================================================================
+PRODUCT PROCEDURE
+==================================================================================
+create or replace procedure prcaddproduct
+(
+pname  product.p_name%TYPE,
+pimg product.p_img%TYPE,
+pcid  product.p_c_id%TYPE,
+pdesc product.p_desc%TYPE,
+prc product.price%TYPE,
+pqty product.p_qty%TYPE,
+postedby product.p_admin%TYPE
+)
+AS 
+BEGIN
+DECLARE
+PID NUMBER;
+BEGIN
+SELECT CASE WHEN MAX(P_ID) IS NULL THEN 1
+ELSE
+MAX(P_ID)+1
+END INTO  PID FROM PRODUCT;
+INSERT INTO PRODUCT(P_ID,P_NAME,P_IMG,P_C_ID,P_DESC,PRICE,P_QTY,P_ADMIN) VALUES
+(PID,PNAME,PIMG,PCID,PDESC,PRC,PQTY,POSTEDBY);
+DBMS_OUTPUT.PUT_LINE('ADDED SUCCESSFULLY....');
+END;
+END;
+
+exec prcaddproduct('camera','C:\Users\ankit\Desktop\images\p4.jpg',1,'High Quality HD',9000,5,'Ankit');
+exec prcaddproduct('Coconut oil','C:\Users\ankit\Desktop\images\p2.jpg',1,'Pleasure',9000,5,'Ankit');
+exec prcaddproduct('Perfumes','C:\Users\ankit\Desktop\images\p3.jpg',1,'Well smell',250,6,'Amita');
+exec prcaddproduct('camera','C:\Users\ankit\Desktop\images\p4.jpg',1,'High Quality HD',9000,5,'Amita');
+
+==============================================================================================================
+create or replace procedure prcupdatepdb
+(
+pcid  product.p_c_id%TYPE,
+pqty product.p_qty%TYPE
+)
+AS 
+BEGIN
+UPDATE PRODUCT SET P_QTY=P_QTY-PQTY WHERE P_ID=PCID;
+END;
+
+
+===================================================================================
+CREATE OR REPLACE PROCEDURE DELETEPRODUCT(
+PID PRODUCT.P_ID%TYPE
+)
+AS
+BEGIN
+DELETE FROM PRODUCT WHERE P_ID=PID;
+END;
+
+===================================================================================
+CREATE OR REPLACE PROCEDURE UPDATEPRODUCT
+(
+PID PRODUCT.P_ID%TYPE,
+pname  product.p_name%TYPE,
+pimg product.p_img%TYPE,
+pcid  product.p_c_id%TYPE,
+pdesc product.p_desc%TYPE,
+prc product.price%TYPE,
+pqty product.p_qty%TYPE
+)
+AS
+BEGIN
+UPDATE PRODUCT SET P_NAME=NVL2(PNAME,PNAME,P_NAME),
+P_IMG=NVL2(PIMG,PIMG,P_IMG),
+P_C_ID=NVL2(PCID,PCID,P_C_ID),
+P_DESC=NVL2(PDESC,PDESC,P_DESC),
+PRICE=NVL2(PRC,PRC,PRICE),
+P_QTY=NVL2(PQTY,PQTY,P_QTY)
+WHERE P_ID=PID;
+DBMS_OUTPUT.PUT_LINE('PRODUCT UPDATE SUCCESFULLY.....');
+END;
+
+=====================================================================================
+CARDS PROCEDURE
+=====================================================================================
+create or replace procedure prcAddcard
+(
+cno cards.c_no%type,
+uid cards.u_id%type,
+cvv cards.c_ccv%type,
+cexpm cards.c_expMonth%type,
+cexpy cards.c_expYear%type,
+chname cards.c_hName%type
+)
+as
+begin
+insert into cards(c_no,u_id,c_ccv,c_expMonth,c_expYear,c_hName) values
+(cno,uid,cvv,cexpm,cexpy,chname);
+end;
+/
+
+=======================================================================================
+create or replace procedure prcDelCard(
+cno cards.c_no%type)
+as
+begin 
+delete from cards where c_no=cno;
+end;
+/
+
